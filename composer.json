@@ -2,7 +2,7 @@
   "name": "jacksonsr45/radiante-orm",
   "autoload": {
     "psr-4": {
-      "Jacksonsr45\\RadianteORM\\": "src/"
+      "Jacksonsr45\\": "src/"
     }
   },
   "license": "MIT",
