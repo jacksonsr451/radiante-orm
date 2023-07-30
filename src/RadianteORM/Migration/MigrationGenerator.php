@@ -10,17 +10,31 @@ use ReflectionProperty;
 class MigrationGenerator
 {
     private $db;
-    private Model $model;
+    private array $models;
     private ReflectionProperty $tableProperty;
     private ReflectionProperty $properties;
 
-    public function __construct(Connection $db, $model)
+    public function __construct(Connection $db)
     {
         $this->db = $db;
-        $this->model = $model;
+        $this->models = $this->getModels();
     }
 
-    private function getTableFromClass($className): mixed
+    private function getModels()
+    {
+        $allClasses = get_declared_classes();
+        $modelClasses = [];
+
+        foreach ($allClasses as $className) {
+            if (is_subclass_of($className, Model::class)) {
+                $modelClasses[] = $className;
+            }
+        }
+
+        return $modelClasses;
+    }
+
+    private function getTableFromClass(Model $className): mixed
     {
         $reflection = new ReflectionClass($className);
         $this->tableProperty = $reflection->getProperty('table');
@@ -28,12 +42,12 @@ class MigrationGenerator
         return $this->tableProperty->getValue(new $className());
     }
 
-    private function getPropertyType($property): mixed
+    private function getPropertyType(ReflectionProperty $property, Model $model): mixed
     {
         if ($property->hasType() && !$property->getType()->isBuiltin()) {
             return $property->getType()->getName();
         } else {
-            return $this->getTypeFromValue($property->getValue(new $this->model()));
+            return $this->getTypeFromValue($property->getValue(new $model()));
         }
     }
 
@@ -60,7 +74,7 @@ class MigrationGenerator
             case $this->isDate($value):
                 $string = 'TIMESTAMP';
                 break;
-            case is_object($value):
+            case $value instanceof Model:
                 $string = 'INT';
                 break;
             default:
@@ -71,7 +85,7 @@ class MigrationGenerator
         return $string;
     }
 
-    private function isDate($value): bool
+    private function isDate(mixed $value): bool
     {
         return (bool)strtotime($value);
     }
@@ -82,9 +96,16 @@ class MigrationGenerator
         $migrationTable->createMigrationTable();
     }
 
-    public function createMigrationFromClass(): void
+    public function createMigrationsFromModels(): void
     {
-        $tableName = $this->getTableFromClass($this->model);
+        foreach ($this->models as $modelClass) {
+            $this->createMigrationFromClass($modelClass);
+        }
+    }
+
+    public function createMigrationFromClass(Model $model): void
+    {
+        $tableName = $this->getTableFromClass($model);
 
         $tableName = trim($tableName);
         $tableName = preg_replace('/[^A-Za-z0-9\_]/', '', $tableName);
@@ -92,7 +113,7 @@ class MigrationGenerator
 
         $migrationPath = __DIR__ . "/migrations/{$migrationFileName}";
 
-        $reflection = new ReflectionClass($this->model);
+        $reflection = new ReflectionClass($model);
         $this->properties = $reflection->getProperties(
             ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED
         );
@@ -102,12 +123,12 @@ class MigrationGenerator
 
         foreach ($this->properties as $property) {
             $propertyName = $property->getName();
-            $propertyType = $this->getPropertyType($property);
+            $propertyType = $this->getPropertyType($property, $model);
 
             if ($propertyName === 'id') {
                 $tablePrimaryColumn = new TableColumn(
                     $propertyName,
-                    $this->getTypeFromValue($property->getValue(new $this->model())),
+                    $this->getTypeFromValue($property->getValue(new $model())),
                     true
                 );
             } else {
