@@ -13,7 +13,7 @@ class MigrationTable
         $this->db = $db;
     }
 
-    public function createMigrationTable()
+    public function createMigrationTable(): void
     {
         $this->db->connect();
 

@@ -15,7 +15,7 @@ class MigrationWriter
         $this->migrationPath = $migrationPath;
     }
 
-    public function writeMigrationContent($primaryColumn, $columns)
+    public function writeMigrationContent($primaryColumn, $columns): void
     {
         $primaryKeyColumn = "{$primaryColumn->getName()} {$primaryColumn->getType()} AUTO_INCREMENT PRIMARY KEY";
 

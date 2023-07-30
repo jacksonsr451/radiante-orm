@@ -4,28 +4,31 @@ namespace Jacksonsr45\RadianteORM\Migration;
 
 class TableColumn
 {
-    private $name;
-    private $type;
-    private $isPrimaryKey;
+    private string $name;
+    private string $type;
+    private bool $isPrimaryKey;
 
-    public function __construct($name, $type, $isPrimaryKey = false)
-    {
+    public function __construct(
+        string $name,
+        string $type,
+        bool $isPrimaryKey = false
+    ) {
         $this->name = $name;
         $this->type = $type;
         $this->isPrimaryKey = $isPrimaryKey;
     }
 
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
 
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
 
-    public function isPrimaryKey()
+    public function isPrimaryKey(): bool
     {
         return $this->isPrimaryKey;
     }
